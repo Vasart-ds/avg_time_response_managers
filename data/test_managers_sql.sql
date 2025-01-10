@@ -4,7 +4,11 @@ WITH message_sorting AS (
         	created_by,
         	created_at,
         	LEAD(created_at) OVER (PARTITION BY entity_id ORDER BY created_at) AS manager_answer_time,
-        	LAG(type) OVER (PARTITION BY entity_id ORDER BY created_at) AS prev_type
+        	LAG(type) OVER (PARTITION BY entity_id ORDER BY created_at) AS prev_type,
+        	(CASE
+        		WHEN created_by = 0 AND type = 'outgoing_chat_message' THEN 'uncorrect'
+        	ELSE 'correct'
+        	END) as check_messages
 	FROM test.chat_messages
 ),
 filtered_msgs AS (
@@ -19,6 +23,7 @@ filtered_msgs AS (
            ELSE prev_type
            END AS upd_type
  	FROM message_sorting
+ 	WHERE check_messages != 'uncorrect'
 ),
 response_time AS (
 	SELECT entity_id,
